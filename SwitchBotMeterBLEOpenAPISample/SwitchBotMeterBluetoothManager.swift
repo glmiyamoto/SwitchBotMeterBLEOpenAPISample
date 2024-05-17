@@ -54,6 +54,20 @@ final class SwitchBotMeterBluetoothManager: NSObject {
             options: nil
         )
     }
+
+    private func update(serviceData: ServiceData) {
+        if let _battery = serviceData.battery {
+            battery = _battery
+        }
+
+        if let _humidity = serviceData.humidity {
+            humidity = _humidity
+        }
+
+        if let _temperature = serviceData.temperature {
+            temperature = _temperature
+        }
+    }
 }
 
 extension SwitchBotMeterBluetoothManager: CBCentralManagerDelegate {
@@ -79,9 +93,7 @@ extension SwitchBotMeterBluetoothManager: CBCentralManagerDelegate {
                 print("ServiceData[\(key.uuidString)]: \(data.map({ String(format:"%02x ", $0) }).joined())")
 
                 guard let serviceData = ServiceData(data: data) else { continue }
-                battery = serviceData.battery
-                humidity = serviceData.humidity
-                temperature = serviceData.temperature
+                update(serviceData: serviceData)
                 break
             }
         }
@@ -89,9 +101,7 @@ extension SwitchBotMeterBluetoothManager: CBCentralManagerDelegate {
         if let data = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data,
            let serviceData = ServiceData(data: data) {
             print("Manufacture data: \(data.map({ String(format:"%02x ", $0) }).joined())")
-            battery = serviceData.battery
-            humidity = serviceData.humidity
-            temperature = serviceData.temperature
+            update(serviceData: serviceData)
         }
     }
 }
