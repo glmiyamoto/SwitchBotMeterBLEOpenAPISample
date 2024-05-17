@@ -16,11 +16,18 @@ final class SwitchBotMeterBluetoothManager: NSObject {
         case woIOSensorTH = "WoIOSensorTH"
     }
 
+    enum Service {
+        // UUID list of scan RSP
+        static let rspUUIDs: [CBUUID] = [
+            CBUUID(string: "000D"),
+            CBUUID(string: "FD3D")
+        ]
+    }
+
     static let shared = SwitchBotMeterBluetoothManager()
 
     private var centralManager: CBCentralManager!
 
-    @objc dynamic var isActive: Bool = false
     /// Battery in percent
     @objc dynamic var battery: Int = .max
     /// Humidity in percent
@@ -39,10 +46,13 @@ final class SwitchBotMeterBluetoothManager: NSObject {
         }
     }
 
-    func readMeter() {
+    private func scanForPeripherals() {
         guard !centralManager.isScanning else { return }
         print("Scanning for bluetooth service.")
-        centralManager.scanForPeripherals(withServices: nil)
+        centralManager.scanForPeripherals(
+            withServices: Service.rspUUIDs,
+            options: nil
+        )
     }
 }
 
@@ -51,12 +61,10 @@ extension SwitchBotMeterBluetoothManager: CBCentralManagerDelegate {
         if central.state == .poweredOn {
             // Bluetooth is powered on, start scanning for devices
             print("Bluetooth is available.")
-            isActive = true
-            readMeter()
+            scanForPeripherals()
         } else {
             // Bluetooth is not available or powered off
             print("Bluetooth is not available.")
-            isActive = false
         }
     }
 
@@ -67,9 +75,10 @@ extension SwitchBotMeterBluetoothManager: CBCentralManagerDelegate {
 
         if let dic = advertisementData[CBAdvertisementDataServiceDataKey] as? [CBUUID: Data] {
             for key in dic.keys {
-                guard let data = dic[key],
-                      let serviceData = ServiceData(data: data) else { continue }
+                guard let data = dic[key] else { continue }
                 print("ServiceData[\(key.uuidString)]: \(data.map({ String(format:"%02x ", $0) }).joined())")
+
+                guard let serviceData = ServiceData(data: data) else { continue }
                 battery = serviceData.battery
                 humidity = serviceData.humidity
                 temperature = serviceData.temperature
@@ -84,7 +93,5 @@ extension SwitchBotMeterBluetoothManager: CBCentralManagerDelegate {
             humidity = serviceData.humidity
             temperature = serviceData.temperature
         }
-
-        centralManager.stopScan()
     }
 }

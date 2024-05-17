@@ -29,10 +29,6 @@ struct ContentView: View {
                 Spacer()
             }
             Spacer()
-            Button("Update") {
-                binder.update()
-            }
-            .disabled(!binder.isActive)
         }
         .padding()
     }
@@ -42,7 +38,6 @@ final class ContentViewBinder: ObservableObject {
     private let manager = SwitchBotMeterBluetoothManager.shared
     private var observations = [NSKeyValueObservation]()
 
-    @Published private(set) var isActive: Bool = false
     /// Battery in percent
     @Published private(set) var battery: Int?
     /// Humidity in percent
@@ -52,9 +47,6 @@ final class ContentViewBinder: ObservableObject {
 
     init() {
         observations = [
-            manager.observe(\.isActive, options: [.new, .old]) { [weak self] _, value in
-                self?.isActive = value.newValue ?? false
-            },
             manager.observe(\.battery, options: [.new, .old]) { [weak self] _, value in
                 self?.battery = value.newValue
             },
@@ -70,10 +62,6 @@ final class ContentViewBinder: ObservableObject {
     deinit {
         observations.forEach({ $0.invalidate() })
         observations = []
-    }
-
-    func update() {
-        manager.readMeter()
     }
 }
 
